@@ -1,0 +1,343 @@
+import keep_alive
+import discord
+from discord.ext import commands
+import random
+import pickle
+import os
+import datetime
+import asyncio
+import time
+from itertools import cycle
+
+
+client = commands.Bot(command_prefix = ';')
+client.remove_command('help')
+
+@client.event
+async def on_ready():
+  await client.change_presence(status=discord.Status.idle, activity=discord.Game('𝓉𝑒𝓂𝑒𝓇𝑒'))
+  print('client is runnin')
+
+
+kool_people = ['661799604593098762']
+
+
+#CURRANCYSYSTEM
+data_filename = "data.pickle"
+
+class Data:
+    def __init__(self, wallet, bank):
+        self.wallet = wallet
+        self.bank = bank
+
+
+
+
+#Commands
+  
+@client.command(name="gamble", pass_context=True, aliases=["bet"])
+#@commands.cooldown(1,5)
+async def gamble(ctx, arg1):
+  member_data = load_member_data(ctx.message.author.id)
+  arg1 = arg1.replace('k', '000')
+  amount = 0
+  if arg1 == "max" or arg1 == "all":
+      amount = member_data.wallet
+  else:
+    amount = int(arg1)
+  if(member_data.wallet < amount):
+    await ctx.reply("ur too poor")
+    return
+  t = int(arg1)
+  if(t < 0):
+    return
+    member_data.wallet = 0
+  winrate = 40
+  win = random.randint(1,100) <= winrate
+  player_value = 0
+  client_value = 0
+  if win:
+    player_value+=random.randint(3, 12)
+    percentage = (random.randint(6, 13)*10) + 100
+    client_value = random.randint(1, player_value)
+    amount *= percentage / 100
+    a = round(amount)
+    member_data.wallet += a
+    amou = str(a)
+    amou = amou.replace('.0', '')
+    wallet = str(member_data.wallet)
+    wallet = wallet.replace('.0', '')
+    embed = discord.Embed(title=f"You won {amou} " + f"You now have {wallet}")
+    embed.add_field(name="Your Dice", value=f"You rolled {player_value}")
+    embed.add_field(name="client's Dice", value=f"client rolled {client_value}")
+    await ctx.reply(embed=embed)
+  else:
+    client_value+=random.randint(3, 12)
+    percentage = random.randint(60, 100) + 100
+    player_value = random.randint(1, client_value)
+    member_data.wallet -= amount
+    wallet = str(member_data.wallet)
+    wallet = wallet.replace('.0', '')
+    embed = discord.Embed(title=f"You lost {int(amount)} coins " + f"You now have {wallet} coins")
+    embed.add_field(name="Your Dice", value=f"You rolled {player_value}")
+    embed.add_field(name="client's Dice", value=f"client rolled {client_value}")
+    await ctx.reply(embed=embed)
+
+  save_member_data(ctx.message.author.id, member_data)
+@client.command(name="withdraw", pass_context=True, aliases=["with"])
+#@commands.cooldown(1,5)
+async def withdraw(ctx, arg1):
+  member_data = load_member_data(ctx.message.author.id)
+  amount = 0
+  if arg1 == "max" or arg1 == "all":
+    amount = member_data.bank
+  else:
+    amount = int(arg1)
+  if(amount < 0):
+    await ctx.reply("fuck off")
+    return
+  if amount > member_data.bank:
+    await ctx.reply("You don't have that many coins in your bank, you big silly goose!")
+    return
+  else:
+    amount = member_data.bank
+    member_data.wallet+=amount
+    member_data.bank-=amount
+    save_member_data(ctx.message.author.id, member_data)
+    embed = discord.Embed(title=f"Withdrew {amount} coins")
+    wallet = str(member_data.wallet)
+    wallet = wallet.replace('.0', '')
+    bank = str(member_data.bank)
+    bank = bank.replace('.0', '')
+    embed.add_field(name="Wallet", value=str(wallet))
+    embed.add_field(name="Bank", value=str(bank))
+
+    await ctx.reply(embed=embed)
+@client.command(name="deposit", pass_context=True, aliases=["dep"])
+#@commands.cooldown(1,5)
+async def deposit(ctx, arg1):
+    member_data = load_member_data(ctx.message.author.id)
+    amount = 0
+    if arg1 == "max" or arg1 == "all":
+      amount = member_data.wallet
+    else:
+      amount = int(arg1)
+    if(amount < 0):
+      await ctx.reply("fuck off")
+      return
+    if member_data.wallet < amount:
+      await ctx.reply("You don't have that many coins in your wallet, earn moar")
+      return
+    elif member_data.bank + amount < 1000:
+      member_data.bank+=amount
+      member_data.wallet-=amount
+    else:
+      delta = 1000-member_data.bank
+      amount = delta
+      member_data.bank+=delta
+      member_data.wallet-=delta
+    save_member_data(ctx.message.author.id, member_data)
+    embed = discord.Embed(title=f"Deposited {amount} coins")
+    wallet = str(member_data.wallet)
+    wallet = wallet.replace('.0', '')
+    bank = str(member_data.bank)
+    bank = bank.replace('.0', '')
+    embed.add_field(name="Wallet", value=str(wallet))
+    embed.add_field(name="Bank", value=str(bank))
+
+    await ctx.reply(embed=embed)
+@client.command()
+@commands.cooldown(1,2)
+async def beg(ctx):
+    member_data = load_member_data(ctx.message.author.id)
+    win = random.randint(1,3) <= 2;
+    coins_earned = 0
+    if win:
+      coins_earned = random.randint(1,3)
+      await ctx.reply(f"I don't know how but some idiot gave you **{coins_earned} coins**")
+    else:
+      await ctx.reply("You had an **66.66%** chance of succeeding and u still got nothing")
+    member_data.wallet+=coins_earned
+    save_member_data(ctx.message.author.id, member_data)
+      
+@client.command()
+@commands.cooldown(1,50)
+async def work(ctx):
+    member_data = load_member_data(ctx.message.author.id)
+    #hello verycool do u like my new updates
+    coins_earned = random.randint(2, 10)
+    member_data.wallet += coins_earned
+    await ctx.reply(f"You earned **{coins_earned} coins**")
+
+    save_member_data(ctx.message.author.id, member_data)
+
+#gambling add here later
+@client.command()
+@commands.cooldown(1,99)
+async def fish(ctx):
+    member_data = load_member_data(ctx.message.author.id)
+    coins_earned = random.randint(1, 15)
+    win = random.randint(1,5) <= 4
+    if win:
+      member_data.wallet += coins_earned
+      await ctx.reply(f"You caught and sold a fish for **{coins_earned} coins**")
+    else:
+      die = random.randint(60,72) <= 69
+      # die = True #test
+      if(die):
+        member_data.wallet = 0
+        await ctx.reply(f"You caught nothing but a disease and **died** :skull:")
+      else:
+        await ctx.reply(f"You caught nothing, try again next time")
+    save_member_data(ctx.message.author.id, member_data)
+@client.command(name="share", pass_context=True, aliases=['gift', "give"])
+async def share(ctx, user, amount):
+  member = str(user)
+  member = member[3:21]
+  member = int(member)
+  giver_data = load_member_data(ctx.message.author.id)
+  reciever_data = load_member_data(member)
+  if(giver_data.wallet < int(amount)):
+    await ctx.reply("ur too poor")
+  else:
+    giver_data.wallet -= int(amount)
+    reciever_data.wallet += int(amount)
+    await ctx.reply(f"sucessfully shared {amount} coins")
+  save_member_data(ctx.message.author.id, giver_data)
+  save_member_data(member, reciever_data)
+
+@client.command(name = "wipe", pass_context=True, aliases=["die"])
+async def wipe(ctx, user):
+  if str(ctx.message.author.id) in kool_people:
+    member = str(user)
+    member = member[3:21]
+    member = int(member)
+    reciever_data = load_member_data(member)
+    reciever_data.wallet = 0
+    reciever_data.bank = 0
+    await ctx.reply(f"<@{member}> just got wiped L")
+    save_member_data(member, reciever_data)
+  else:
+    await ctx.reply("wiping people is not cool")
+
+@client.command(name="generate", pass_context=True, aliases=["gen"])
+async def generate(ctx, amt):
+  amt = amt.replace('k', '000')
+  amt = amt.replace('m', '000000')
+  member_data = load_member_data(ctx.message.author.id)
+  if str(ctx.message.author.id) in kool_people:
+    member_data.wallet += int(amt)
+    await ctx.reply(f"sucessfully generated {amt} coins into your wallet")
+  else:
+    await ctx.reply("ur not cool so go away")
+  save_member_data(ctx.message.author.id, member_data)
+
+@client.command()
+@commands.cooldown(1,99)
+async def hunt(ctx):
+    member_data = load_member_data(ctx.message.author.id)
+    coins_earned = random.randint(1, 15)
+    win = random.randint(1,5) <= 4
+    if win:
+      member_data.wallet += coins_earned
+      await ctx.reply(f"Hope you're happy that you caught and sold a hopeless animal for **{coins_earned} coins**.")
+    else:
+      die = random.randint(60,72) <= 69
+      if(die):
+        member_data.wallet = 0
+        await ctx.reply(f"You caught nothing but a disease and **died** :skull:")
+      else:
+        await ctx.reply(f"You caught nothing, try again next time")
+    save_member_data(ctx.message.author.id, member_data)
+
+@client.command()
+# #@commands.cooldown(1,3)
+async def bal(ctx):
+    member_data = load_member_data(ctx.message.author.id)
+
+    embed = discord.Embed(title=f"{ctx.message.author.display_name}'s Balance")
+    wallet = str(member_data.wallet)
+    wallet = wallet.replace('.0', '')
+    bank = str(member_data.bank)
+    bank = bank.replace('.0', '')
+    embed.add_field(name="Wallet", value=wallet)
+    embed.add_field(name="Bank", value=bank + "/1000")
+    #embed.add_field(name="member_data", value=str(member_data.member_data))
+    await ctx.reply(embed=embed)
+
+
+#functions
+def load_data():
+    if os.path.isfile(data_filename):
+        with open(data_filename, "rb") as file:
+            return pickle.load(file)
+    else:
+        return dict()
+
+def load_member_data(member_ID):
+    data = load_data()
+
+    if member_ID not in data:
+        return Data(0, 0)
+
+    return data[member_ID]
+
+def save_member_data(member_ID, member_data):
+    data = load_data()
+
+    data[member_ID] = member_data
+
+    with open(data_filename, "wb") as file:
+        pickle.dump(data, file)
+    return
+#COMMANDS/AUTORESPONDERS/BLOCK
+
+@client.command()
+async def test(ctx):
+  await ctx.reply('This works!')
+
+@client.command()
+async def help(ctx, args=None):
+    help_embed = discord.Embed(title="Prak's help commands!")
+    command_names_list = [x.name for x in client.commands]
+
+    if not args:
+        help_embed.add_field(
+            name="List of supported commands:",
+            value="\n".join([str(i+1)+". "+x.name for i,x in enumerate(client.commands)]),
+            inline=False
+        )
+        help_embed.add_field(
+            name="Details",
+            value="Type `.help <command name>` for more details about each command.",
+            inline=False
+        )
+
+    elif args in command_names_list:
+        help_embed.add_field(
+            name=args,
+            value=client.get_command(args).help
+        )
+
+    else:
+        help_embed.add_field(
+            name="Nope.",
+            value="Don't think I got that command, *child*!"
+        )
+
+    await ctx.send(embed=help_embed)
+
+@client.command()
+async def ping(ctx):
+    before = time.monotonic()
+    message = await ctx.send("Pong!")
+    ping = (time.monotonic() - before) * 1000
+    await message.edit(content=f"Pong!  `{int(ping)}ms`")
+
+
+
+
+
+  
+keep_alive.keep_alive()
+client.run('OTYzMjgwNzY3MzgxODE5NDUy.YlTzHw.EHxoMgW0IsHYIXras4vPX0OueGE')
