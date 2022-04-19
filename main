@@ -1,3 +1,4 @@
+from multiprocessing.connection import Client
 import discord
 from discord.ext import commands
 import random
@@ -7,10 +8,14 @@ import datetime
 import asyncio
 import time
 from itertools import cycle
+import sys, traceback
 
 
 client = commands.Bot(command_prefix = ';')
 client.remove_command('help')
+
+
+
 
 @client.event
 async def on_ready():
@@ -326,17 +331,52 @@ async def help(ctx, args=None):
 
     await ctx.send(embed=help_embed)
 
+
 @client.command()
 async def ping(ctx):
-    before = time.monotonic()
-    message = await ctx.send("Pong!")
-    ping = (time.monotonic() - before) * 1000
-    await message.edit(content=f"Pong!  `{int(ping)}ms`")
+  before = time.monotonic()
+  message = await ctx.send("Pong!")
+  ping = (time.monotonic() - before) * 1000
+  await message.edit(content=f"Pong!  `{int(ping)}ms`")
 
 
 
+@client.command()
+@commands.cooldown(1,30,commands.BucketType.user)
+async def autofrong(ctx, arg):
 
+  if int(arg)>30:
+    await ctx.send("too much >30")
+  elif int(arg)<1:
+    await ctx.send("no neggies right ANDY")
+  else:
+    for x in range (1,int(arg) + 1):
+      await ctx.send("FRONG :interrobang:")
 
+    await ctx.send("autofrong done")
+  @client.event
+  async def on_command_error(ctx,error):
+    if isinstance(error, commands.CommandOnCooldown):
+      await ctx.send ("too much autofronging waut {:.0f} more seconds".format(error.retry_after))
+
+@client.command()
+@commands.cooldown(1,30,commands.BucketType.user)
+
+async def auto(ctx,arg1,arg2):
+  if int(arg2)>30:
+    await ctx.send("pelaese  >30")
+  else:  
+    for x in range (1,int(arg2)+1):
+      await ctx.send(arg1)
+  n = ("spam fo {arg1} is now done").format(arg1=arg1)
+  await ctx.send(n)
   
+  @client.event
+  async def on_command_error(ctx,error):
+    if isinstance(error, commands.CommandOnCooldown):
+      await ctx.send ("used too much retry in {:.0f} more seconds".format(error.retry_after))
 
-client.run('OTYzMjgwNzY3MzgxODE5NDUy.YlTzHw.EHxoMgW0IsHYIXras4vPX0OueGE')
+
+
+
+client.run('TOKEN', bot=True, reconnect=True)
