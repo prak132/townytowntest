@@ -1,5 +1,5 @@
 # townytowntest
-<p><strong>Html</strong> is being in use!</p>
+<p><strong>THis is terrible I forgot that I made this shit thing</strong> stop looking cause its terrible I USED .PICKLE AS A DATA FORMAT!!!!!!</p>
 <p>Made by <strong>prak#3853&nbsp;</strong></p>
 <p>&nbsp;Please DM: its <strong>3am#9581&nbsp;</strong>for requests for new features! We would love to add new things</p>
 <hr>
